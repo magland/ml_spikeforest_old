@@ -8,7 +8,7 @@ sys.path.append(parent_path)
 from mlpy import readmda
 
 processor_name='spikeforest.compute_validation_stats'
-processor_version='0.1'
+processor_version='0.11'
 def compute_validation_stats(*,confusion_matrix,output,output_format='json'):
     """
     Compute validation stats from a confusion matrix (see ms3.confusion_matrix). The first dimension (rows) of the confusion matrix should correspond to ground truth.
@@ -38,19 +38,25 @@ def compute_validation_stats(*,confusion_matrix,output,output_format='json'):
     col_sums=np.sum(CM,axis=0)
     col_sums=np.maximum(1,col_sums) # do not permit zeros in denominator
     accuracies=np.zeros(K1)
+    num_correct=np.zeros(K1).astype(int)
+    num_false_positives=np.zeros(K1).astype(int)
+    num_false_negatives=np.zeros(K1).astype(int)
     for k1 in range(1,K1+1):
         row=CM[k1-1,:]
         tmp=row/(col_sums+row_sums[k1-1]-row)
-        accuracies[k1-1]=np.max(tmp[0:K2])
+        maxind=np.argmax(tmp[0:K2])
+        accuracies[k1-1]=tmp[maxind]
+        num_correct[k1-1]=row[maxind]
+        num_false_positives[k1-1]=col_sums[maxind]-row[maxind]
+        num_false_negatives[k1-1]=row_sums[k1-1]-row[maxind]
     
-    accuracies_sorted=np.sort(accuracies)[::-1]
-    obj={'accuracies':accuracies.tolist(),'accuracies_sorted':accuracies_sorted.tolist()};
+    obj={'accuracies':accuracies.tolist(),'num_correct':num_correct.tolist(),'num_false_positives':num_false_positives.tolist(),'num_false_negatives':num_false_negatives.tolist()};
     with open(output, 'w') as outfile:
         json.dump(obj, outfile, indent=4, sort_keys=True)    
     return True
 
 def test_compute_validation_stats():
-    CM=np.random.uniform(0,100,(5,7))
+    CM=np.floor(np.random.uniform(0,100,(5,7)))
     if not compute_validation_stats(confusion_matrix=CM,output='tmp.json'):
         print ('compute_validation_stats returned with error')
         return False
