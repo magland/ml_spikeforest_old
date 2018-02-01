@@ -7,7 +7,7 @@ sys.path.append(parent_path)
 
 from mlpy import readmda
 
-processor_name='pyms.compute_validation_stats'
+processor_name='spikeforest.compute_validation_stats'
 processor_version='0.1'
 def compute_validation_stats(*,confusion_matrix,output,output_format='json'):
     """
